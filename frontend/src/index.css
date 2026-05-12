@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Dot-grid background for Landing Page */
+.dot-grid {
+  background-color: #F5F4F2;
+  background-image: radial-gradient(circle, #C5C1BA 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* React Flow canvas overrides */
+.react-flow__attribution {
+  display: none;
+}
