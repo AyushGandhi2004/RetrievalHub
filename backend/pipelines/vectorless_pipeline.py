@@ -8,17 +8,10 @@ from groq import AsyncGroq
 from loguru import logger
 
 from config.settings import settings
+from pipelines.rag_prompt import ANSWER_PROMPT
 from retrieval.tree_traversal import traverse
 
-_ANSWER_PROMPT = """You are answering a question using sections retrieved from a document.
-These sections were located by navigating a hierarchical summary tree.
-
-Retrieved sections:
-{context}
-
-Question: {question}
-
-Answer:"""
+_INSUFFICIENT_CONTEXT_REPLY = "Retrieved data is not enough to answer this question."
 
 
 class VectorlessPipeline:
@@ -59,7 +52,18 @@ class VectorlessPipeline:
         )
 
         # ── Build generation prompt ────────────────────────────────────────────
-        prompt   = _ANSWER_PROMPT.format(context=context, question=question)
+        if not context.strip():
+            yield f"data: {json.dumps({'type': 'token', 'content': _INSUFFICIENT_CONTEXT_REPLY})}\n\n"
+
+            total_query_tokens = traversal_tokens
+            grand_total_tokens = ingestion_tokens + total_query_tokens
+            yield (
+                f"data: {json.dumps({'type': 'usage', 'traversal_tokens': traversal_tokens, 'generation_prompt_tokens': 0, 'generation_completion_tokens': 0, 'total_query_tokens': total_query_tokens, 'total_tokens': total_query_tokens, 'prompt_tokens': 0, 'completion_tokens': 0, 'ingestion_tokens': ingestion_tokens, 'grand_total_tokens': grand_total_tokens, 'retrieval_ms': retrieval_ms})}\n\n"
+            )
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
+            return
+
+        prompt   = ANSWER_PROMPT.format(context=context, question=question)
         messages = [{"role": "user", "content": prompt}]
 
         # ── Streaming generation ───────────────────────────────────────────────

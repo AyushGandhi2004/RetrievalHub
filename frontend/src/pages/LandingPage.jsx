@@ -22,7 +22,7 @@ export default function LandingPage() {
             {APP_CONFIG.appName}
           </span>
           <a
-            href="https://github.com"
+            href="https://github.com/AyushGandhi2004/RetrievalHub"
             target="_blank"
             rel="noreferrer"
             className="text-stone-500 hover:text-stone-800 transition-colors flex items-center gap-1.5 text-sm font-body"

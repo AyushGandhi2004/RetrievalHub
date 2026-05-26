@@ -6,21 +6,12 @@ from groq import AsyncGroq
 from loguru import logger
 
 from config.settings import settings
+from pipelines.rag_prompt import ANSWER_PROMPT, build_context
 from retrieval.hybrid_retriever import retrieve
 from retrieval.reranker import rerank
 from retrieval.context_expander import expand
 
-_ANSWER_PROMPT = """You are a precise document analyst.
-Answer the question using ONLY the provided context sections.
-If the context is insufficient, state that explicitly.
-When helpful, cite the page number (e.g. "As stated on page 4...").
-
-Context:
-{context}
-
-Question: {question}
-
-Answer:"""
+_INSUFFICIENT_CONTEXT_REPLY = "Retrieved data is not enough to answer this question."
 
 
 class RAGPipeline:
@@ -60,10 +51,14 @@ class RAGPipeline:
         yield f"data: {json.dumps({'type': 'sources', 'chunks': sources_payload})}\n\n"
 
         # ── Build context + prompt ─────────────────────────────────────────────
-        context = "\n\n---\n\n".join(
-            f"[Page {c['page_number']}]\n{c['text']}" for c in expanded
-        )
-        prompt   = _ANSWER_PROMPT.format(context=context, question=question)
+        context = build_context(expanded, question)
+        if not context.strip():
+            yield f"data: {json.dumps({'type': 'token', 'content': _INSUFFICIENT_CONTEXT_REPLY})}\n\n"
+            yield f"data: {json.dumps({'type': 'usage', 'prompt_tokens': 0, 'completion_tokens': 0, 'total_tokens': 0, 'retrieval_ms': retrieval_ms})}\n\n"
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
+            return
+
+        prompt   = ANSWER_PROMPT.format(context=context, question=question)
         messages = [{"role": "user", "content": prompt}]
 
         # ── Streaming generation ───────────────────────────────────────────────

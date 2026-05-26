@@ -1,4 +1,4 @@
-# RAGBench
+# RetrievalHub
 
 An interactive educational web app that compares **Traditional RAG** against **Vectorless RAG** side-by-side on any PDF you upload.
 

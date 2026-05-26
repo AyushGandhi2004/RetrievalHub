@@ -182,6 +182,62 @@ class TestContextExpander:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# rag_pipeline — prompt context trimming
+# ──────────────────────────────────────────────────────────────────────────────
+
+class TestRAGPromptContext:
+    def test_answer_prompt_has_guardrails(self):
+        from pipelines.rag_prompt import ANSWER_PROMPT
+
+        assert "Use ONLY the provided context sections" in ANSWER_PROMPT
+        assert "Do NOT use prior knowledge" in ANSWER_PROMPT
+        assert (
+            "Retrieved data is not enough to answer this question." in ANSWER_PROMPT
+        )
+
+    def _import_helpers(self):
+        from pipelines.rag_prompt import ANSWER_PROMPT, build_context, estimate_tokens
+
+        return ANSWER_PROMPT, build_context, estimate_tokens
+
+    def test_build_context_respects_token_budget(self):
+        ANSWER_PROMPT, build_context, estimate_tokens = self._import_helpers()
+
+        chunks = [
+            {
+                "page_number": 1,
+                "text": "A" * 8000,
+            },
+            {
+                "page_number": 2,
+                "text": "B" * 8000,
+            },
+        ]
+
+        context = build_context(chunks, "What does the document say?")
+        prompt = ANSWER_PROMPT.format(context=context, question="What does the document say?")
+
+        assert estimate_tokens(prompt) <= 4500
+        assert "[Page 1]" in context
+        assert len(context) < 10000
+
+    def test_build_context_truncates_single_large_chunk(self):
+        _, build_context, _ = self._import_helpers()
+
+        chunks = [
+            {
+                "page_number": 3,
+                "text": "C" * 20000,
+            }
+        ]
+
+        context = build_context(chunks, "Summarize the section.")
+
+        assert len(context) < 5000
+        assert context.startswith("[Page 3]\n")
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # uploadthing_client — JWT key extraction
 # ──────────────────────────────────────────────────────────────────────────────
 

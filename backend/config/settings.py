@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     hybrid_search_alpha: float = 0.7
     top_k_retrieval:     int   = 10
     top_k_after_rerank:  int   = 4
+    rag_context_token_budget: int = 8000
+    rag_chunk_char_budget:    int = 1800
 
     # ── VECTORLESS TREE ───────────────────────────────────────────────────────
     tree_max_depth:            int = 4
@@ -49,7 +51,7 @@ class Settings(BaseSettings):
     tree_max_select_per_level: int = 2
     pagination_chars_per_page: int = 3000
     tree_summary_max_words:    int = 200
-    tree_ingestion_model:      str = "llama-3.1-8b-instant"
+    tree_ingestion_model:      str = "llama-3.3-70b-versatile"
     tree_ingestion_max_tokens: int = 192
     tree_ingestion_content_chars: int = 2500
 
